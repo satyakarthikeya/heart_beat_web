@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Sound Classification - Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        .title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+        .response {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            animation: fadeIn 0.5s;
+        }
+        .mcq-question {
+            margin-top: 15px;
+        }
+        .mcq-options {
+            margin-top: 10px;
+        }
+        .mcq-options label {
+            display: block;
+            margin: 5px 0;
+        }
+        .button {
+            background: #4CAF50;
+            color: #ffffff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="title">Heart Sound Classification</div>
+    <div class="input-section">
+        <input type="file" id="audioFile" accept="audio/*">
+        <button class="button" onclick="uploadFile()">Upload and Predict</button>
+    </div>
+    <div id="responseContainer"></div>
+    <div id="mcqContainer" style="display: none;"></div>
+</div>
+
+<script>
+    async function uploadFile() {
+        const fileInput = document.getElementById('audioFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('Please select an audio file.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const responseContainer = document.getElementById('responseContainer');
+        responseContainer.innerHTML = '<div class="response">Processing...</div>';
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            responseContainer.innerHTML = `<div class="response">Prediction: ${result.prediction}<br>Symptoms: ${result.symptoms}</div>`;
+
+            if (result.prediction !== 'Normal') {
+                loadMCQ(result.prediction, result.symptoms);
+            } else {
+                document.getElementById('mcqContainer').style.display = 'none';
+            }
+        } catch (error) {
+            responseContainer.innerHTML = `<div class="response">Error: ${error.message}</div>`;
+        }
+    }
+
+    function loadMCQ(predictedClass, symptoms) {
+        const mcqContainer = document.getElementById('mcqContainer');
+        mcqContainer.style.display = 'block';
+        mcqContainer.innerHTML = `
+            <div class="mcq-question">Do you experience any of the following symptoms for ${predictedClass}: ${symptoms}?</div>
+            <div class="mcq-options">
+                <label><input type="radio" name="symptoms" value="yes"> Yes</label>
+                <label><input type="radio" name="symptoms" value="no"> No</label>
+            </div>
+            <button class="button" onclick="submitMCQ()">Submit</button>
+        `;
+    }
+
+    function submitMCQ() {
+        const selectedOption = document.querySelector('input[name="symptoms"]:checked');
+        const responseContainer = document.getElementById('responseContainer');
+        if (selectedOption) {
+            responseContainer.innerHTML += `<div class="response">User Response: ${selectedOption.value}</div>`;
+            document.getElementById('mcqContainer').style.display = 'none';
+        } else {
+            alert('Please select an option.');
+        }
+    }
+</script>
+</body>
+</html>
