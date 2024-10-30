@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heart Sound Classification - Prediction</title>
+    <title>Heart Sound Prediction</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f3f4f6;
+            background: #e9ecef;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -16,129 +16,241 @@
         }
         .container {
             background: #ffffff;
-            padding: 20px;
+            padding: 40px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 100%;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            text-align: center;
+            position: relative;
         }
         .title {
-            text-align: center;
-            font-size: 24px;
+            font-size: 30px;
             margin-bottom: 20px;
-            color: #4CAF50;
-        }
-        .response {
-            background: #e8f5e9;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
-            animation: fadeIn 0.5s;
-        }
-        .mcq-question {
-            margin-top: 15px;
-        }
-        .mcq-options {
-            margin-top: 10px;
-        }
-        .mcq-options label {
-            display: block;
-            margin: 5px 0;
+            color: #28a745;
+            font-weight: bold;
         }
         .button {
-            background: #4CAF50;
+            background: #28a745;
             color: #ffffff;
-            padding: 10px 15px;
+            padding: 12px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            width: 100%;
             transition: background 0.3s ease;
-            margin-top: 10px;
+            margin: 10px 5px;
+            font-size: 16px;
         }
         .button:hover {
-            background: #45a049;
+            background: #218838;
         }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+        }
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+        }
+        audio {
+            margin-top: 20px;
+            display: none;
+            width: 100%;
+        }
+        .recording-status {
+            font-size: 18px;
+            color: #ff8c00;
+            margin: 15px 0;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+        }
+        select {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            width: 100%;
+        }
+        .divider {
+            margin: 20px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            border: 4px solid rgba(255, 255, 255, 0.6);
+            border-top: 4px solid #28a745;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 15px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="title">Heart Sound Classification</div>
-    <div class="input-section">
-        <input type="file" id="audioFile" accept="audio/*">
-        <button class="button" onclick="uploadFile()">Upload and Predict</button>
-    </div>
-    <div id="responseContainer"></div>
-    <div id="mcqContainer" style="display: none;"></div>
+    <div class="title">Heart Sound Prediction</div>
+
+    <select id="audioInputSelect"></select>
+
+    <button id="startRecording" class="button">Start Recording</button>
+    <button id="stopRecording" class="button" disabled>Stop Recording</button>
+    <div id="recordingStatus" class="recording-status" style="display: none;"></div>
+    
+    <audio id="audioPlayback" controls></audio>
+
+    <div class="divider"></div>
+
+    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".wav" required>
+        <button type="submit" class="button">Upload and Predict</button>
+    </form>
+    
+    <div id="result" class="error"></div>
+    <div class="spinner" id="loadingSpinner"></div> <!-- Spinner for loading -->
 </div>
-
 <script>
-    async function uploadFile() {
-        const fileInput = document.getElementById('audioFile');
-        const file = fileInput.files[0];
-        if (!file) {
-            alert('Please select an audio file.');
-            return;
-        }
+    let mediaRecorder;
+    let audioChunks = [];
 
-        const formData = new FormData();
-        formData.append('file', file);
+    // Populate audio input device selector
+    async function initAudioInputSelect() {
+        const audioInputSelect = document.getElementById('audioInputSelect');
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
 
-        const responseContainer = document.getElementById('responseContainer');
-        responseContainer.innerHTML = '<div class="response">Processing...</div>';
+        audioInputs.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Microphone ${audioInputSelect.length + 1}`;
+            audioInputSelect.appendChild(option);
+        });
+    }
+
+    document.getElementById('startRecording').addEventListener('click', async () => {
+        const audioInputSelect = document.getElementById('audioInputSelect');
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: audioInputSelect.value ? { exact: audioInputSelect.value } : undefined }
+        });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.addEventListener('dataavailable', event => {
+            audioChunks.push(event.data);
+        });
+
+        mediaRecorder.addEventListener('stop', () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = document.getElementById('audioPlayback');
+            audio.style.display = 'block';
+            audio.src = audioUrl;
+
+            // Prepare the audio blob for prediction
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.wav');
+
+            // Show loading spinner
+            document.getElementById('loadingSpinner').style.display = 'block';
+            // Clear previous results
+            document.getElementById('result').textContent = '';
+
+            // Send the WAV file for prediction
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                const resultDiv = document.getElementById('result');
+                // Hide loading spinner
+                document.getElementById('loadingSpinner').style.display = 'none';
+                
+                if (result.error) {
+                    resultDiv.textContent = result.error;
+                    resultDiv.classList.add('error');
+                } else {
+                    let message = `Prediction: ${result.prediction}\nSymptoms: ${result.symptoms}`;
+                    if (result.questions) {
+                        message += `\nQuestions: ${result.questions}`;
+                    }
+                    resultDiv.textContent = message;
+                    resultDiv.classList.remove('error');
+                    resultDiv.classList.add('success');
+                }
+            })
+            .catch(error => {
+                // Hide loading spinner
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('result').textContent = 'Error occurred: ' + error.message;
+            });
+        });
+
+        mediaRecorder.start();
+        document.getElementById('recordingStatus').textContent = 'Recording...';
+        document.getElementById('recordingStatus').style.display = 'block';
+        document.getElementById('startRecording').disabled = true;
+        document.getElementById('stopRecording').disabled = false;
+    });
+
+    document.getElementById('stopRecording').addEventListener('click', () => {
+        mediaRecorder.stop();
+        document.getElementById('recordingStatus').textContent = 'Stopped recording.';
+        document.getElementById('stopRecording').disabled = true;
+        document.getElementById('startRecording').disabled = false;
+        audioChunks = []; // Clear audio chunks for next recording
+    });
+
+    // Handle file upload prediction
+    document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        
+        // Show loading spinner
+        document.getElementById('loadingSpinner').style.display = 'block';
+        // Clear previous results
+        document.getElementById('result').textContent = '';
 
         try {
             const response = await fetch('/predict', {
                 method: 'POST',
                 body: formData
             });
-
             const result = await response.json();
-            responseContainer.innerHTML = `<div class="response">Prediction: ${result.prediction}<br>Symptoms: ${result.symptoms}</div>`;
+            const resultDiv = document.getElementById('result');
 
-            if (result.prediction !== 'Normal') {
-                loadMCQ(result.prediction, result.symptoms);
+            // Hide loading spinner
+            document.getElementById('loadingSpinner').style.display = 'none';
+            
+            if (result.error) {
+                resultDiv.textContent = result.error;
+                resultDiv.classList.add('error');
             } else {
-                document.getElementById('mcqContainer').style.display = 'none';
+                let message = `Prediction: ${result.prediction}\nSymptoms: ${result.symptoms}`;
+                if (result.questions) {
+                    message += `\nQuestions: ${result.questions}`;
+                }
+                resultDiv.textContent = message;
+                resultDiv.classList.remove('error');
+                resultDiv.classList.add('success');
             }
         } catch (error) {
-            responseContainer.innerHTML = `<div class="response">Error: ${error.message}</div>`;
+            // Hide loading spinner
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('result').textContent = 'Error occurred: ' + error.message;
         }
-    }
+    });
 
-    function loadMCQ(predictedClass, symptoms) {
-        const mcqContainer = document.getElementById('mcqContainer');
-        mcqContainer.style.display = 'block';
-        mcqContainer.innerHTML = `
-            <div class="mcq-question">Do you experience any of the following symptoms for ${predictedClass}: ${symptoms}?</div>
-            <div class="mcq-options">
-                <label><input type="radio" name="symptoms" value="yes"> Yes</label>
-                <label><input type="radio" name="symptoms" value="no"> No</label>
-            </div>
-            <button class="button" onclick="submitMCQ()">Submit</button>
-        `;
-    }
-
-    function submitMCQ() {
-        const selectedOption = document.querySelector('input[name="symptoms"]:checked');
-        const responseContainer = document.getElementById('responseContainer');
-        if (selectedOption) {
-            responseContainer.innerHTML += `<div class="response">User Response: ${selectedOption.value}</div>`;
-            document.getElementById('mcqContainer').style.display = 'none';
-        } else {
-            alert('Please select an option.');
-        }
-    }
+    initAudioInputSelect();
 </script>
 </body>
 </html>
