@@ -1,22 +1,14 @@
 import numpy as np
 import librosa
 import pywt
-import logging
 
 class FeatureExtractor:
-    def __init__(self):
-        # Set up logging
-        logging.basicConfig(level=logging.DEBUG)
-        self.logger = logging.getLogger(__name__)
-
     def extract_features(self, file_path):
         try:
-            self.logger.debug(f"Loading audio file: {file_path}")
             features = []
 
             # Load audio file
             y, sr = librosa.load(file_path, sr=None)
-            self.logger.debug(f"Audio file loaded with sample rate: {sr}, duration: {len(y)/sr:.2f} seconds")
 
             # Log Mel Spectrogram
             mel_spect = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
@@ -63,10 +55,7 @@ class FeatureExtractor:
 
             # Combine all features into a single array
             all_features = np.hstack(features)
-            self.logger.debug(f"Extracted features shape: {all_features.shape}")
-
             return all_features
 
         except Exception as e:
-            logging.error('Error in feature extraction: %s', str(e))
             return None

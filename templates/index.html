@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heart Sound Classification - Prediction</title>
+    <title>Heart Sound Classification</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Global Styling */
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #f7f9fb;
+            background-color: #121212;
+            color: #e0e0e0;
             margin: 0;
             padding: 0;
             display: flex;
@@ -17,198 +17,58 @@
             align-items: center;
             height: 100vh;
         }
-        /* Container Styling */
         .container {
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 100%;
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 850px;
+            width: 90%;
+            padding: 50px;
             text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7);
         }
         .title {
-            font-size: 26px;
+            font-size: 40px;
             font-weight: 700;
-            margin-bottom: 15px;
-            color: #333;
+            color: #bb86fc;
+            margin-bottom: 20px;
         }
         .description {
-            font-size: 16px;
-            margin-bottom: 25px;
-            color: #777;
-        }
-        /* Button Styling */
-        input[type="file"] {
-            display: none;
-        }
-        label {
-            background: #007BFF;
-            color: white;
-            padding: 12px 25px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        label:hover {
-            background: #0056b3;
+            font-size: 18px;
+            color: #b0b0b0;
+            margin-bottom: 35px;
+            line-height: 1.6;
         }
         .button {
-            background: #007BFF;
-            color: white;
-            padding: 12px 25px;
+            background-color: #bb86fc;
+            color: #121212;
+            padding: 12px 28px;
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            border-radius: 50px;
             font-size: 16px;
-            margin-top: 20px;
-            transition: background-color 0.3s;
-        }
-        .button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(187, 134, 252, 0.4);
         }
         .button:hover {
-            background: #0056b3;
-        }
-        .file-info {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #555;
-        }
-        /* Result Card */
-        .result-card {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            display: none;
-            text-align: left;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .result-card div {
-            margin-bottom: 12px;
-            font-size: 16px;
-            color: #333;
-        }
-        /* Loading and Error Message */
-        .loading {
-            font-size: 18px;
-            font-weight: bold;
-            color: #007BFF;
-            display: none;
-        }
-        .error-card {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            border-radius: 8px;
-            display: none;
-        }
-        /* Footer Styling */
-        footer {
-            margin-top: 50px;
-            font-size: 14px;
-            color: #777;
-        }
-        footer a {
-            color: #007BFF;
-            text-decoration: none;
-        }
-        footer a:hover {
-            text-decoration: underline;
-        }
-        /* Responsive Styling */
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-            .title {
-                font-size: 22px;
-            }
-            .button {
-                width: 100%;
-            }
-            label {
-                width: 100%;
-                font-size: 14px;
-                padding: 10px;
-            }
+            background-color: #9c47ff;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(156, 71, 255, 0.6);
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="title">Upload Your Heart Sound File</div>
-    <div class="description">Please upload a WAV file for analysis and prediction of your heart health.</div>
-
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" id="fileInput" name="file" accept=".wav">
-        <label for="fileInput">Choose File</label>
-        <div id="fileInfo" class="file-info">No file selected</div>
-        <button type="submit" class="button" id="predictButton" disabled>Predict</button>
-    </form>
-
-    <div class="result-card" id="resultCard">
-        <div><strong>Prediction:</strong> <span id="predictionText"></span></div>
-        <div><strong>Symptoms:</strong> <span id="symptomsText"></span></div>
+    <div class="container">
+        <h1 class="title">Heart Sound Classification</h1>
+        <p class="description">
+            Experience advanced heart sound analysis. Upload or record your heart sounds for an accurate health prediction powered by cutting-edge technology.
+        </p>
+        <a href="/predict" class="button">Get Started</a>
     </div>
-
-    <div class="loading" id="loadingMessage">Loading...</div>
-
-    <div class="error-card" id="errorMessage"></div>
-
-    <footer>
-        <p>Need help? <a href="#">Contact Us</a></p>
-    </footer>
-
-    <script>
-        // Enable the "Predict" button once a file is selected
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            var fileName = e.target.files.length > 0 ? e.target.files[0].name : "No file selected";
-            document.getElementById('fileInfo').textContent = "Selected file: " + fileName;
-            document.getElementById('predictButton').disabled = e.target.files.length === 0;
-        });
-
-        // Handle form submission and send the file to the backend
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            document.getElementById('loadingMessage').style.display = 'block';
-            document.getElementById('errorMessage').style.display = 'none';
-
-            var formData = new FormData();
-            formData.append("file", document.getElementById('fileInput').files[0]);
-
-            // Send the file to the backend for prediction
-            fetch('/predict', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loadingMessage').style.display = 'none';
-
-                if (data.success) {
-                    // Update the result section dynamically
-                    document.getElementById('resultCard').style.display = 'block';
-                    document.getElementById('predictionText').textContent = data.prediction;
-                    document.getElementById('symptomsText').textContent = data.symptoms;
-                } else {
-                    document.getElementById('errorMessage').textContent = "Error: " + data.message;
-                    document.getElementById('errorMessage').style.display = 'block';
-                }
-            })
-            .catch(error => {
-                document.getElementById('loadingMessage').style.display = 'none';
-                document.getElementById('errorMessage').textContent = "An error occurred. Please try again.";
-                document.getElementById('errorMessage').style.display = 'block';
-            });
-        });
-    </script>
-</div>
 </body>
 </html>
