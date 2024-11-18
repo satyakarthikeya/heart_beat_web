@@ -1,17 +1,14 @@
 from flask import Flask, request, jsonify, render_template
 import xgboost as xgb
-import joblib
 import numpy as np
 import os
 
 app = Flask(__name__)
 
-# Load the XGBoost model from the .joblib file
-model_path = "xgboost_heart_classification_model.joblib"
-model = joblib.load(model_path)
-
-# Re-save the model as a .json file for future use
-model.booster().save_model("xgboost_heart_classification_model.json")
+# Load the XGBoost model
+model_path = "xgboost_heart_classification_model.json"  # Use the .json model file
+model = xgb.Booster()
+model.load_model(model_path)
 
 @app.route("/")
 def home():
